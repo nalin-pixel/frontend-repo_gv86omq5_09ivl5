@@ -1,9 +1,72 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Header from "./components/Header";
 import PromptForm from "./components/PromptForm";
 import Preview from "./components/Preview";
+import ChatBot from "./components/ChatBot";
 
 function App() {
+  const [siteType, setSiteType] = useState("Blog");
+  const [brandName, setBrandName] = useState("NovaByte");
+  const [tagline, setTagline] = useState("Build something brilliant");
+  const [palette, setPalette] = useState("blue");
+  const [customSections, setCustomSections] = useState("");
+  const [extras, setExtras] = useState({ animations: true, responsive: true, accessibility: true, seo: true });
+
+  const sectionsByType = {
+    Blog: ["Hero", "Featured Posts", "Latest Posts Grid", "Newsletter", "Footer"],
+    Portfolio: ["Hero", "Projects Grid", "About Me", "Testimonials", "Contact", "Footer"],
+    "SaaS Landing Page": [
+      "Navbar",
+      "Hero",
+      "Feature Highlights",
+      "Product Screenshots",
+      "Pricing",
+      "Testimonials",
+      "FAQ",
+      "CTA",
+      "Footer",
+    ],
+    "E-commerce Product Page": [
+      "Navbar",
+      "Product Gallery",
+      "Product Details",
+      "Reviews",
+      "Related Products",
+      "Footer",
+    ],
+    Documentation: ["Navbar", "Sidebar", "Docs Content Area", "Footer"],
+    Restaurant: ["Hero", "Menu Highlights", "Gallery", "Reservations CTA", "Location & Hours", "Footer"],
+    "Event/Conference": ["Hero", "Speakers", "Schedule", "Tickets CTA", "Sponsors", "FAQ", "Footer"],
+    "Agency/Services": ["Hero", "Services", "Case Studies", "Process", "Testimonials", "Contact", "Footer"],
+    "Personal Bio/Link-in-bio": ["Avatar + Bio", "Links List", "Socials", "Footer"],
+    "Dashboard (static data)": ["Sidebar", "Topbar", "Cards", "Charts Placeholder", "Table", "Footer"],
+  };
+
+  const sections = useMemo(() => {
+    if (customSections.trim()) {
+      return customSections
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return sectionsByType[siteType] || [];
+  }, [siteType, customSections]);
+
+  const prompt = useMemo(() => {
+    const colorGuide = {
+      blue: "Use a blue/slate palette with subtle gradients and focus rings.",
+      purple: "Use purple/indigo with glassmorphism accents.",
+      emerald: "Use emerald/teal with soft shadows.",
+      rose: "Use rose/pink with vibrant gradients.",
+      orange: "Use orange/amber with warm highlights.",
+      gray: "Use neutral gray with clean minimalism.",
+    }[palette];
+
+    const check = (b) => (b ? "Yes" : "No");
+
+    return `You are a senior front-end developer. Create a COMPLETE single-file website using plain HTML, CSS, and JavaScript (no frameworks, no external CDNs except Google Fonts allowed).\n\nProject goal: A ${siteType} website for "${brandName}" with the tagline "${tagline}".\n\nDesign requirements:\n- ${colorGuide}\n- Modern, responsive layout that scales from mobile to desktop\n- Clear visual hierarchy, generous spacing, smooth hover states\n- Use the Inter or Manrope font from Google Fonts\n- Include a favicon placeholder data URL\n- Include a sticky navbar or header if appropriate\n\nContent sections to include (in order):\n- ${sections.join("\n- ")}\n\nFunctionality requirements:\n- ${check(extras.animations)} to subtle animations: fade/slide on scroll, button micro-interactions\n- ${check(extras.responsive)} to fully responsive behavior with a mobile-first approach\n- ${check(extras.accessibility)} to proper semantics, aria-labels, focus states, color contrast\n- ${check(extras.seo)} to basic SEO meta tags (title, description, social preview)\n\nImplementation details:\n- Provide ALL code in one HTML file between <html>...</html>\n- Write clean, commented CSS inside a <style> tag; prefer CSS variables for theme colors\n- Add small vanilla JS for interactivity (e.g., mobile nav toggle, FAQ accordion, testimonial slider if present)\n- Include sample placeholder content and images using placeholders (e.g., viaPicsum or data URLs)\n- Validate with WAI-ARIA best practices where relevant\n\nOutput format:\n- Return only the final HTML document, nothing else.\n`;
+  }, [siteType, brandName, tagline, palette, sections, extras]);
+
   const [previewHtml, setPreviewHtml] = useState("");
 
   const buildDemoHtml = ({ brandName, tagline, siteType, palette, sections, prompt }) => {
@@ -13,7 +76,7 @@ function App() {
       emerald: { bg: "#071a14", primary: "#10b981", accent: "#34d399" },
       rose: { bg: "#1b0b13", primary: "#f43f5e", accent: "#fb7185" },
       orange: { bg: "#1a1206", primary: "#f59e0b", accent: "#fb923c" },
-      gray: { bg: "#0b0f14", primary: "#94a3b8", accent: "#cbd5e1" }
+      gray: { bg: "#0b0f14", primary: "#94a3b8", accent: "#cbd5e1" },
     };
     const theme = palettes[palette] || palettes.blue;
 
@@ -95,17 +158,39 @@ function App() {
 </html>`;
   };
 
-  const handleGenerate = (prompt, data) => {
-    const html = buildDemoHtml({ ...data, prompt });
+  const handleGenerate = (overridePrompt, overrideData) => {
+    const data = overrideData || { brandName, tagline, siteType, palette, sections };
+    const html = buildDemoHtml({ ...data, prompt: overridePrompt || prompt });
     setPreviewHtml(html);
   };
+
+  const handleUpdate = (updates) => {
+    if (updates.siteType !== undefined) setSiteType(updates.siteType);
+    if (updates.brandName !== undefined) setBrandName(updates.brandName);
+    if (updates.tagline !== undefined) setTagline(updates.tagline);
+    if (updates.palette !== undefined) setPalette(updates.palette);
+    if (updates.customSections !== undefined) setCustomSections(updates.customSections);
+    if (updates.extras !== undefined) setExtras(updates.extras);
+  };
+
+  const values = { siteType, brandName, tagline, palette, customSections, extras };
 
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_-20%,rgba(59,130,246,0.15),transparent_50%),radial-gradient(circle_at_120%_20%,rgba(168,85,247,0.12),transparent_50%)]" />
       <div className="relative">
         <Header />
-        <PromptForm onGenerate={handleGenerate} />
+        <PromptForm
+          values={values}
+          setValues={handleUpdate}
+          prompt={prompt}
+          onGenerate={() => handleGenerate()}
+        />
+        <ChatBot
+          {...values}
+          onUpdate={handleUpdate}
+          onPreview={() => handleGenerate()}
+        />
         <Preview htmlString={previewHtml} />
       </div>
     </div>

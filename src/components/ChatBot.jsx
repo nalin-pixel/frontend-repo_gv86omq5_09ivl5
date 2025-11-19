@@ -30,13 +30,23 @@ const ChatBot = ({
     const userMsg = { role: "user", content: text };
     setMessages((m) => [...m, userMsg]);
 
+    const wantsPreview = /\bpreview\b/i.test(text) || /\bshow\b.+\bpreview\b/i.test(text);
     const updates = parseCommand(text, { siteType, brandName, tagline, palette, customSections, extras });
 
     if (Object.keys(updates).length === 0) {
+      // No updates detected. If they asked for preview, still render it.
+      if (wantsPreview) {
+        onPreview();
+        const reply = { role: "assistant", content: "Rendering the latest preview now." };
+        setMessages((m) => [...m, reply]);
+        setInput("");
+        return;
+      }
+
       const reply = {
         role: "assistant",
         content:
-          "I couldn't detect a change. Try: 'Set brand to Alpha', 'Site type Portfolio', 'Tagline: Build boldly', 'Palette blue', 'Sections: Hero, Features, Pricing', 'Disable animations', or 'Enable SEO'.",
+          "I couldn't detect a change. Try: 'Set brand to Alpha', 'Site type Portfolio', 'Tagline: Build boldly', 'Palette blue', 'Sections: Hero, Features, Pricing', 'Disable animations', or 'Enable SEO'. You can also type 'preview' to render the current spec.",
       };
       setMessages((m) => [...m, reply]);
       setInput("");
@@ -45,10 +55,10 @@ const ChatBot = ({
 
     onUpdate(updates);
     const summary = buildSummary(updates);
-    const reply = { role: "assistant", content: summary + "\nType 'preview' to see the updated demo." };
+    const reply = { role: "assistant", content: summary + (wantsPreview ? "\nRendering a fresh preview..." : "\nType 'preview' to see the updated demo.") };
     setMessages((m) => [...m, reply]);
 
-    if (/\bpreview\b/i.test(text)) {
+    if (wantsPreview) {
       onPreview();
     }
 
@@ -88,7 +98,7 @@ const ChatBot = ({
                 send();
               }
             }}
-            placeholder="e.g., Palette purple, Set brand to Alpha Labs, Disable animations, Sections: Hero, Features, Pricing, FAQ, Footer"
+            placeholder="e.g., Palette purple, Set brand to Alpha Labs, Disable animations, Sections: Hero, Features, Pricing, FAQ, Footer, preview"
             className="flex-1 bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button onClick={send} className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white">
@@ -101,23 +111,22 @@ const ChatBot = ({
 };
 
 function parseCommand(text, current) {
-  const t = text.toLowerCase();
   const updates = {};
 
   // Brand name
-  const brandMatch = text.match(/(?:set\s+brand\s+to|brand\s*:)\s*([\w\s&-]{2,})/i);
+  const brandMatch = text.match(/(?:set\s+brand\s+to|brand\s*:?)\s*([\w\s&-]{2,})/i);
   if (brandMatch) updates.brandName = brandMatch[1].trim();
 
   // Tagline
-  const tagMatch = text.match(/(?:set\s+tagline\s+to|tagline\s*:)\s*(.+)$/i);
+  const tagMatch = text.match(/(?:set\s+tagline\s+to|tagline\s*:?)\s*(.+)$/i);
   if (tagMatch) updates.tagline = tagMatch[1].trim();
 
   // Site type
-  const typeMatch = text.match(/(?:set\s+site\s*type\s*to|site\s*type\s*|type\s*:)\s*([\w\s/-]{3,})/i);
+  const typeMatch = text.match(/(?:set\s+site\s*type\s*to|site\s*type\s*|type\s*:?\s*)([\w\s\/-]{3,})/i);
   if (typeMatch) updates.siteType = toTitleCase(typeMatch[1].trim());
 
-  // Palette
-  const palMatch = text.match(/(?:palette|color|theme)\s*(?:to|:)\s*(blue|purple|emerald|rose|orange|gray)/i);
+  // Palette (accepts: "palette purple", "palette: purple", "color to purple")
+  const palMatch = text.match(/(?:palette|color|theme)\s*(?:to|:)?\s*(blue|purple|emerald|rose|orange|gray)/i);
   if (palMatch) updates.palette = palMatch[1].toLowerCase();
 
   // Sections list
@@ -133,11 +142,6 @@ function parseCommand(text, current) {
   if (/enable\s+accessibility|turn\s+on\s+a11y|enable\s+a11y/i.test(text)) updates.extras = { ...current.extras, accessibility: true };
   if (/disable\s+responsive/i.test(text)) updates.extras = { ...current.extras, responsive: false };
   if (/enable\s+responsive/i.test(text)) updates.extras = { ...current.extras, responsive: true };
-
-  // Quick preview trigger
-  if (/\bpreview\b/i.test(text)) {
-    // no state change required; handled by caller
-  }
 
   return updates;
 }

@@ -1,73 +1,115 @@
+import React, { useState } from "react";
+import Header from "./components/Header";
+import PromptForm from "./components/PromptForm";
+import Preview from "./components/Preview";
+
 function App() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+  const [previewHtml, setPreviewHtml] = useState("");
 
-      <div className="relative min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full">
-          {/* Header with Flames icon */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-6">
-              <img
-                src="/flame-icon.svg"
-                alt="Flames"
-                className="w-24 h-24 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]"
-              />
-            </div>
+  const buildDemoHtml = ({ brandName, tagline, siteType, palette, sections, prompt }) => {
+    const palettes = {
+      blue: { bg: "#0f172a", primary: "#3b82f6", accent: "#38bdf8" },
+      purple: { bg: "#0b1020", primary: "#6366f1", accent: "#a78bfa" },
+      emerald: { bg: "#071a14", primary: "#10b981", accent: "#34d399" },
+      rose: { bg: "#1b0b13", primary: "#f43f5e", accent: "#fb7185" },
+      orange: { bg: "#1a1206", primary: "#f59e0b", accent: "#fb923c" },
+      gray: { bg: "#0b0f14", primary: "#94a3b8", accent: "#cbd5e1" }
+    };
+    const theme = palettes[palette] || palettes.blue;
 
-            <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-              Flames Blue
-            </h1>
+    const sectionHtml = (s) => {
+      const id = s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      return `<section id="${id}" class="section"><h2>${s}</h2><p>Placeholder content for ${s.toLowerCase()}.</p></section>`;
+    };
 
-            <p className="text-xl text-blue-200 mb-6">
-              Build applications through conversation
-            </p>
-          </div>
-
-          {/* Instructions */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Describe your idea</h3>
-                <p className="text-blue-200/80 text-sm">Use the chat panel on the left to tell the AI what you want to build</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Watch it build</h3>
-                <p className="text-blue-200/80 text-sm">Your app will appear in this preview as the AI generates the code</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Refine and iterate</h3>
-                <p className="text-blue-200/80 text-sm">Continue the conversation to add features and make changes</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-sm text-blue-300/60">
-              No coding required • Just describe what you want
-            </p>
-          </div>
-        </div>
+    return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${brandName} — ${siteType}</title>
+  <meta name="description" content="${tagline}" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:${theme.bg};--primary:${theme.primary};--accent:${theme.accent};--text:#e5e7eb;--muted:#94a3b8}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;line-height:1.6;background:radial-gradient(1200px 600px at 50% -10%,rgba(59,130,246,.2),transparent),var(--bg);color:var(--text)}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    .nav{position:sticky;top:0;backdrop-filter:saturate(140%) blur(8px);background:rgba(2,6,23,.6);border-bottom:1px solid rgba(148,163,184,.15);z-index:50}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;color:#fff;text-decoration:none}
+    .brand-badge{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--accent));box-shadow:0 8px 24px rgba(59,130,246,.35)}
+    .cta{padding:10px 14px;border-radius:10px;background:var(--primary);color:white;border:none;cursor:pointer;font-weight:600}
+    .cta:hover{filter:brightness(1.1)}
+    .hero{padding:80px 24px 40px}
+    .title{font-size:clamp(32px,5vw,56px);line-height:1.1;margin:0 0 10px;font-weight:800}
+    .tag{font-size:clamp(16px,2.6vw,22px);color:var(--muted);margin-bottom:24px}
+    .pill{display:inline-block;padding:6px 10px;border:1px solid rgba(148,163,184,.2);border-radius:999px;color:#cbd5e1;background:rgba(2,6,23,.6)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+    .card{background:rgba(2,6,23,.6);border:1px solid rgba(148,163,184,.15);border-radius:16px;padding:18px}
+    .section{padding:48px 24px;margin:24px;border:1px dashed rgba(148,163,184,.25);border-radius:16px;background:rgba(2,6,23,.4)}
+    footer{padding:48px 24px;color:var(--muted);text-align:center;border-top:1px solid rgba(148,163,184,.15);margin-top:48px}
+    a{color:var(--accent)}
+    @media (max-width:640px){.nav-inner{padding:10px 16px}.hero{padding-top:48px}}
+  </style>
+  <!-- Generated by your prompt builder. Original prompt: \n${prompt.replace(/</g, "&lt;") } -->
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner container">
+      <a class="brand" href="#"><span class="brand-badge"></span>${brandName}</a>
+      <div style="display:flex;gap:10px;align-items:center">
+        <a href="#features" class="pill">Features</a>
+        <a href="#contact" class="pill">Contact</a>
+        <button class="cta">Get Started</button>
       </div>
     </div>
-  )
+  </nav>
+
+  <header class="hero container">
+    <p class="pill">${siteType}</p>
+    <h1 class="title">${brandName}</h1>
+    <p class="tag">${tagline}</p>
+    <div class="grid">
+      <div class="card"><strong>Responsive</strong><br/>Scales from mobile to desktop.</div>
+      <div class="card"><strong>Accessible</strong><br/>Semantic HTML, proper contrast.</div>
+      <div class="card"><strong>Fast</strong><br/>No external frameworks required.</div>
+    </div>
+  </header>
+
+  ${sections.map(sectionHtml).join("\n")}
+
+  <footer>
+    <div class="container">© ${new Date().getFullYear()} ${brandName}. Built from a generated prompt. <a href="#">Privacy</a> · <a href="#">Terms</a></div>
+  </footer>
+
+  <script>
+    // Simple fade-in on scroll
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.transition='opacity .6s ease, transform .6s ease'; e.target.style.opacity=1; e.target.style.transform='translateY(0)'; }});
+    },{threshold:.1});
+    document.querySelectorAll('.section,.card').forEach(el=>{ el.style.opacity=.001; el.style.transform='translateY(10px)'; io.observe(el); });
+  </script>
+</body>
+</html>`;
+  };
+
+  const handleGenerate = (prompt, data) => {
+    const html = buildDemoHtml({ ...data, prompt });
+    setPreviewHtml(html);
+  };
+
+  return (
+    <div className="min-h-screen relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_-20%,rgba(59,130,246,0.15),transparent_50%),radial-gradient(circle_at_120%_20%,rgba(168,85,247,0.12),transparent_50%)]" />
+      <div className="relative">
+        <Header />
+        <PromptForm onGenerate={handleGenerate} />
+        <Preview htmlString={previewHtml} />
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
